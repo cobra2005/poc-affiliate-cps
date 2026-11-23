@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: affiliate
+      POSTGRES_PASSWORD: affiliate
+      POSTGRES_DB: affiliate
+    ports:
+      - "5434:5432"
+    volumes:
+      - affiliate_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U affiliate -d affiliate"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  affiliate_pg:

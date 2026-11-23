@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  name      String
+  email     String     @unique
+  createdAt DateTime   @default(now()) @map("created_at")
+  publisher Publisher?
+  orders    Order[]    @relation("BuyerOrders")
+
+  @@map("users")
+}
+
+model Publisher {
+  id                 Int      @id @default(autoincrement())
+  userId             Int      @unique @map("user_id")
+  user               User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdAt          DateTime @default(now()) @map("created_at")
+  vouchers           Voucher[]
+  refOrders          Order[]  @relation("RefPublisher")
+  attributedOrders   Order[]  @relation("AttributedPublisher")
+
+  @@map("publishers")
+}
+
+model Voucher {
+  id             Int         @id @default(autoincrement())
+  publisherId    Int         @map("publisher_id")
+  publisher      Publisher   @relation(fields: [publisherId], references: [id], onDelete: Restrict)
+  code           String      @unique
+  discountAmount Int         @map("discount_amount")
+  isActive       Boolean     @default(true) @map("is_active")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  orders         Order[]
+
+  @@index([publisherId])
+  @@map("vouchers")
+}
+
+model Product {
+  id        Int      @id @default(autoincrement())
+  name      String
+  price     Int
+  createdAt DateTime @default(now()) @map("created_at")
+  orders    Order[]
+
+  @@map("products")
+}
+
+enum OrderStatus {
+  pending
+  paid
+}
+
+model Order {
+  id                    Int         @id @default(autoincrement())
+  productId             Int         @map("product_id")
+  product               Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  buyerUserId           Int         @map("buyer_user_id")
+  buyer                 User        @relation("BuyerOrders", fields: [buyerUserId], references: [id], onDelete: Restrict)
+  refPublisherId        Int?        @map("ref_publisher_id")
+  refPublisher          Publisher?  @relation("RefPublisher", fields: [refPublisherId], references: [id], onDelete: Restrict)
+  voucherId             Int?        @map("voucher_id")
+  voucher               Voucher?    @relation(fields: [voucherId], references: [id], onDelete: Restrict)
+  attributedPublisherId Int?        @map("attributed_publisher_id")
+  attributedPublisher   Publisher?  @relation("AttributedPublisher", fields: [attributedPublisherId], references: [id], onDelete: Restrict)
+  unitPrice             Int         @map("unit_price")
+  discountAmount        Int         @map("discount_amount")
+  amountPaid            Int         @map("amount_paid")
+  commissionAmount      Int         @default(0) @map("commission_amount")
+  status                OrderStatus @default(pending)
+  paidAt                DateTime?   @map("paid_at")
+  createdAt             DateTime    @default(now()) @map("created_at")
+
+  @@index([productId])
+  @@index([buyerUserId])
+  @@index([refPublisherId])
+  @@index([voucherId])
+  @@index([attributedPublisherId])
+  @@map("orders")
+}
